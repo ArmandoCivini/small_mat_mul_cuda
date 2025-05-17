@@ -1,0 +1,51 @@
+# Compiled object files
+*.o
+*.obj
+
+# Compiled binary files
+*.exe
+*.out
+*.app
+*.a
+*.so
+*.dll
+
+# CUDA generated files
+*.cubin
+*.ptx
+*.fatbin
+
+# Build directories
+/build/
+/bin/
+/lib/
+/CMakeFiles/
+/cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# VSCode settings
+.vscode/
+
+# CLion settings
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python cache (if using Python scripts)
+__pycache__/
+*.pyc
+
+# Environment files
+.env
