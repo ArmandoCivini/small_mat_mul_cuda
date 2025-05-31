@@ -1,4 +1,3 @@
-// matrix_5x5_opt.h
 #pragma once
 
 // A, B, and C are all length‐25 arrays in row‐major order (row*5 + col).
@@ -7,7 +6,6 @@
 __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
                                             const float* __restrict__ B,
                                             float* __restrict__ C) {
-
     // Expression: (a13 - a32 - a33 - a34 - a35 + a53) (b12 + b21 - b22 - b24 - b25 - b32 + b42) (-c13 - c25 + c45)
     float termA1 = A[2] - A[11] - A[12] - A[13] - A[14] + A[22];
     float termB1 = B[1] + B[5] - B[6] - B[8] - B[9] - B[11] + B[16];
@@ -70,8 +68,11 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
 
     // Expression: (-a13 - a53) b31 (-c13 - c15 + c35)
     float termA7 = -A[2] - A[22];
-    float termB7 = ;
+    float termB7 = B[10];
     float result7 = termA7 * termB7;
+    C[2] -= result7; // c13
+    C[4] -= result7; // c15
+    C[14] += result7; // c35
 
     // Expression: (-a13 - a15 + a35) (-b13 - b53) c31
     float termA8 = -A[2] - A[4] + A[14];
@@ -80,9 +81,11 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[10] += result8; // c31
 
     // Expression: a31 (-b13 - b15 + b35) (-c13 - c53)
-    float termA9 = ;
-    float termB9 = ;
+    float termA9 = A[10];
+    float termB9 = -B[2] - B[4] + B[14];
     float result9 = termA9 * termB9;
+    C[2] -= result9; // c13
+    C[22] -= result9; // c53
 
     // Expression: (a21 - a22 - a24 - a25) (b14 + b15 - b25 + b45) (c52 + c54)
     float termA10 = A[5] - A[6] - A[8] - A[9];
@@ -116,19 +119,32 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[6] += result13; // c22
 
     // Expression: a22 (b24 - b44) (c42 + c44)
-    float termA14 = ;
-    float termB14 = ;
+    float termA14 = A[6];
+    float termB14 = B[8] - B[18];
     float result14 = termA14 * termB14;
+    C[16] += result14; // c42
+    C[18] += result14; // c44
 
     // Expression: (a42 + a44) b22 (c24 - c44)
     float termA15 = A[16] + A[18];
-    float termB15 = ;
+    float termB15 = B[6];
     float result15 = termA15 * termB15;
+    C[8] += result15; // c24
+    C[18] -= result15; // c44
 
     // Expression: (a12 + a14 + a21 - a22 - a24 - a25 - a41 + a42 + a44 + a45) b45 (c13 + c14 + c15 - c33 - c34 - c35 + c53 + c54 + c55)
     float termA16 = A[1] + A[3] + A[5] - A[6] - A[8] - A[9] - A[15] + A[16] + A[18] + A[19];
-    float termB16 = ;
+    float termB16 = B[19];
     float result16 = termA16 * termB16;
+    C[2] += result16; // c13
+    C[3] += result16; // c14
+    C[4] += result16; // c15
+    C[12] -= result16; // c33
+    C[13] -= result16; // c34
+    C[14] -= result16; // c35
+    C[22] += result16; // c53
+    C[23] += result16; // c54
+    C[24] += result16; // c55
 
     // Expression: (a13 + a14 + a15 - a33 - a34 - a35 + a53 + a54 + a55) (b12 + b14 + b21 - b22 - b24 - b25 - b41 + b42 + b44 + b45) c45
     float termA17 = A[2] + A[3] + A[4] - A[12] - A[13] - A[14] + A[22] + A[23] + A[24];
@@ -137,9 +153,19 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[19] += result17; // c45
 
     // Expression: a45 (b13 + b14 + b15 - b33 - b34 - b35 + b53 + b54 + b55) (c12 + c14 + c21 - c22 - c24 - c25 - c41 + c42 + c44 + c45)
-    float termA18 = ;
-    float termB18 = ;
+    float termA18 = A[19];
+    float termB18 = B[2] + B[3] + B[4] - B[12] - B[13] - B[14] + B[22] + B[23] + B[24];
     float result18 = termA18 * termB18;
+    C[1] += result18; // c12
+    C[3] += result18; // c14
+    C[5] += result18; // c21
+    C[6] -= result18; // c22
+    C[8] -= result18; // c24
+    C[9] -= result18; // c25
+    C[15] -= result18; // c41
+    C[16] += result18; // c42
+    C[18] += result18; // c44
+    C[19] += result18; // c45
 
     // Expression: (-a41 + a44 + a45 + a51 - a54 - a55) (b11 + b12 - b13 - b22 + 2 b31 + 2 b33 + b42) (c15 + c22 + c24 + c55)
     float termA19 = -A[15] + A[18] + A[19] + A[20] - A[23] - A[24];
@@ -259,8 +285,14 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
 
     // Expression: (-a11 + a15) b55 (c11 + c13 - c31 - c33 + c51 + c53)
     float termA31 = -A[0] + A[4];
-    float termB31 = ;
+    float termB31 = B[24];
     float result31 = termA31 * termB31;
+    C[0] += result31; // c11
+    C[2] += result31; // c13
+    C[10] -= result31; // c31
+    C[12] -= result31; // c33
+    C[20] += result31; // c51
+    C[22] += result31; // c53
 
     // Expression: (a11 + a13 - a31 - a33 + a51 + a53) (-b11 + b15) c55
     float termA32 = A[0] + A[2] - A[10] - A[12] + A[20] + A[22];
@@ -269,9 +301,11 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[24] += result32; // c55
 
     // Expression: a55 (b11 + b13 - b31 - b33 + b51 + b53) (-c11 + c15)
-    float termA33 = ;
-    float termB33 = ;
+    float termA33 = A[24];
+    float termB33 = B[0] + B[2] - B[10] - B[12] + B[20] + B[22];
     float result33 = termA33 * termB33;
+    C[0] -= result33; // c11
+    C[4] += result33; // c15
 
     // Expression: (-a41 + a44 + a45 + a51 - a54 - a55) (-b11 - b12 + b13 - 2 b31 - 2 b33) (c15 + c22 + c24 + c35 + c55)
     float termA34 = -A[15] + A[18] + A[19] + A[20] - A[23] - A[24];
@@ -337,19 +371,31 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[16] += result39; // c42
 
     // Expression: -(a13 (b13 - b33 + b53) (-c11 + c14 + c15 + c31 - c34 - c35 - c41 + c44 + c45))
-    float termA40 = ;
-    float termB40 = ;
-    float result40 = -termA40 * termB40;
+    float termA40 = A[2];
+    float termB40 = B[2] - B[12] + B[22];
+    float result40 = -(termA40 * termB40);
+    C[0] -= result40; // c11
+    C[3] += result40; // c14
+    C[4] += result40; // c15
+    C[10] += result40; // c31
+    C[13] -= result40; // c34
+    C[14] -= result40; // c35
+    C[15] -= result40; // c41
+    C[18] += result40; // c44
+    C[19] += result40; // c45
 
     // Expression: -((-a11 + a14 + a15 + a31 - a34 - a35 - a41 + a44 + a45) b13 (c13 - c33 + c53))
     float termA41 = -A[0] + A[3] + A[4] + A[10] - A[13] - A[14] - A[15] + A[18] + A[19];
-    float termB41 = ;
-    float result41 = -termA41 * termB41;
+    float termB41 = B[2];
+    float result41 = -(termA41 * termB41);
+    C[2] += result41; // c13
+    C[12] -= result41; // c33
+    C[22] += result41; // c53
 
     // Expression: -((a13 - a33 + a53) (-b11 + b14 + b15 + b31 - b34 - b35 - b41 + b44 + b45) c13)
     float termA42 = A[2] - A[12] + A[22];
     float termB42 = -B[0] + B[3] + B[4] + B[10] - B[13] - B[14] - B[15] + B[18] + B[19];
-    float result42 = -termA42 * termB42;
+    float result42 = -(termA42 * termB42);
     C[2] += result42; // c13
 
     // Expression: (-2 a41 - a43 + a44 + a45 + 2 a51 + a53 - a54 - a55) (b12 - b22 + b31 + b33 + b42) c35
@@ -359,14 +405,27 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[14] += result43; // c35
 
     // Expression: a35 (-2 b41 - b43 + b44 + b45 + 2 b51 + b53 - b54 - b55) (c12 - c22 + c31 + c33 + c42)
-    float termA44 = ;
-    float termB44 = ;
+    float termA44 = A[14];
+    float termB44 = -2*B[15] - B[17] + B[18] + B[19] + 2*B[20] + B[22] - B[23] - B[24];
     float result44 = termA44 * termB44;
+    C[1] += result44; // c12
+    C[6] -= result44; // c22
+    C[10] += result44; // c31
+    C[12] += result44; // c33
+    C[16] += result44; // c42
 
     // Expression: (a12 - a22 + a31 + a33 + a42) b35 (-2 c41 - c43 + c44 + c45 + 2 c51 + c53 - c54 - c55)
     float termA45 = A[1] - A[6] + A[10] + A[12] + A[16];
-    float termB45 = ;
+    float termB45 = B[14];
     float result45 = termA45 * termB45;
+    C[15] -= result45; // c41
+    C[17] -= result45; // c43
+    C[18] += result45; // c44
+    C[19] += result45; // c45
+    C[20] += result45; // c51
+    C[22] += result45; // c53
+    C[23] -= result45; // c54
+    C[24] -= result45; // c55
 
     // Expression: (-a21 + a22 + a24 + a25 + a41 - a42 - a44 - a45 + a52 + a54) (b11 + b45) (c14 + c15 + c55)
     float termA46 = -A[5] + A[6] + A[8] + A[9] + A[15] - A[16] - A[18] - A[19] + A[21] + A[23];
@@ -425,8 +484,16 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
 
     // Expression: (-a11 - a13 + a31 + a33 - a41 - a43) b14 (c22 + c24 + c25 - c42 - c44 - c45 + c52 + c54)
     float termA52 = -A[0] - A[2] + A[10] + A[12] - A[15] - A[17];
-    float termB52 = ;
+    float termB52 = B[3];
     float result52 = termA52 * termB52;
+    C[6] += result52; // c22
+    C[8] += result52; // c24
+    C[9] += result52; // c25
+    C[16] -= result52; // c42
+    C[18] -= result52; // c44
+    C[19] -= result52; // c45
+    C[21] += result52; // c52
+    C[23] += result52; // c54
 
     // Expression: (a22 + a24 + a25 - a42 - a44 - a45 + a52 + a54) (-b11 - b13 + b31 + b33 - b41 - b43) c14
     float termA53 = A[6] + A[8] + A[9] - A[16] - A[18] - A[19] + A[21] + A[23];
@@ -435,9 +502,15 @@ __device__ __forceinline__ void matmul5x5_opt(const float* __restrict__ A,
     C[3] += result53; // c14
 
     // Expression: a14 (b22 + b24 + b25 - b42 - b44 - b45 + b52 + b54) (-c11 - c13 + c31 + c33 - c41 - c43)
-    float termA54 = ;
-    float termB54 = ;
+    float termA54 = A[3];
+    float termB54 = B[6] + B[8] + B[9] - B[16] - B[18] - B[19] + B[21] + B[23];
     float result54 = termA54 * termB54;
+    C[0] -= result54; // c11
+    C[2] -= result54; // c13
+    C[10] += result54; // c31
+    C[12] += result54; // c33
+    C[15] -= result54; // c41
+    C[17] -= result54; // c43
 
     // Expression: (a22 + a24 + a25 - a45) (b13 + b14 + b15 - b33 - b34 - b35 + b41 + b43 - b51 + b54 + b55) (c12 + c14 - c22 + c42)
     float termA55 = A[6] + A[8] + A[9] - A[19];
