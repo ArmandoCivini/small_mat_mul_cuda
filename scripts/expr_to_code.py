@@ -89,7 +89,7 @@ def translate_expression(expr: str, param: str) -> str:
 
     neg_char = '-' if negate_result else ''
 
-
+    code_lines.append(f"// Expression: {expr}")
     code_lines.append(f"float termA{param} = {termA_str};")
     code_lines.append(f"float termB{param} = {termB_str};")
     code_lines.append(f"float result{param} = {neg_char}termA{param} * termB{param};")
@@ -102,9 +102,29 @@ def translate_expression(expr: str, param: str) -> str:
     return "\n".join(code_lines)
 
 
+def process_expressions_file(input_file: str, output_file: str):
+    """
+    Read expressions from input file and write translated CUDA code to output file.
+    
+    Args:
+        input_file: Path to input file containing expressions
+        output_file: Path to output file for CUDA code
+    """
+    with open(input_file, 'r') as fin, open(output_file, 'w') as fout:
+        for i, line in enumerate(fin, 1):
+            line = line.strip()
+            if not line:  # Skip empty lines
+                continue
+            
+            cuda_code = translate_expression(line, str(i))
+            fout.write(cuda_code)
+            fout.write("\n\n")  # Add blank line between expressions
 # ── Example Usage ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    expr = "(-a41 + a44 + a45 + a51 - a54 - a55) (-b11 - b12 + b13 - 2 b31 - 2 b33) (c15 + c22 + c24 + c35 + c55)"
-    param = "1"
-    print(translate_expression(expr, param))
+    input_file = '555/555m93_lifted.txt'  # Replace with your input file path
+    output_file = 'cuda_code.cu'     # Replace with your desired output file path
+    process_expressions_file(input_file, output_file)
+    print(f"CUDA code written to {output_file}")
+
+

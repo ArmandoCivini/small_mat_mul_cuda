@@ -51,3 +51,5 @@ __pycache__/
 
 # Environment files
 .env
+
+*temp.txt
