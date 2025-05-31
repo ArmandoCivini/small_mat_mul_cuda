@@ -142,11 +142,13 @@ def translate_expression(expr: str, param: str) -> str:
         result_expr = f"-({result_expr})"
     code_lines.append(f"float result{param} = {result_expr};")
 
-    # 8) Generate C‐updates from termsC
     for sign, coef, var in termsC:
         idx = coord_to_index(var)
         op = "+=" if sign == '+' else "-="
-        code_lines.append(f"C[{idx}] {op} result{param}; // {var}")
+        # include coef, but if coef == '1', omit the multiplier
+        mult = "" if coef == '1' else f"{coef} * "
+        code_lines.append(f"C[{idx}] {op} {mult}result{param}; // {var}")
+
 
     return "\n".join(code_lines)
 

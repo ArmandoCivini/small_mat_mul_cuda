@@ -30,6 +30,7 @@ int main() {
     cudaMalloc(&d_A, 25 * sizeof(float));
     cudaMalloc(&d_B, 25 * sizeof(float));
     cudaMalloc(&d_C, 25 * sizeof(float));
+    cudaMemset(d_C, 0, 25 * sizeof(float));    // ← initialize C to all zeros
 
     cudaMemcpy(d_A, h_A, 25 * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, 25 * sizeof(float), cudaMemcpyHostToDevice);
@@ -47,6 +48,22 @@ int main() {
         for (int j = 0; j < 5; ++j)
             for (int k = 0; k < 5; ++k)
                 h_expected[i * 5 + j] += h_A[i * 5 + k] * h_B[k * 5 + j];
+
+    // Print results
+    printf("Result of matrix multiplication:\n");
+    for (int i = 0; i < 5; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            printf("%f ", h_C[i * 5 + j]);
+        }
+        printf("\n");
+    }
+    printf("Expected result:\n");
+    for (int i = 0; i < 5; ++i) {
+        for (int j = 0; j < 5; ++j) {
+            printf("%f ", h_expected[i * 5 + j]);
+        }
+        printf("\n");
+    }
 
     // Compare
     bool correct = true;
