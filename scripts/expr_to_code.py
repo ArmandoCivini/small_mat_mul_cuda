@@ -121,14 +121,19 @@ def translate_expression(expr: str, param: str) -> str:
     termsC = parse_terms(C_part, 'c')
 
     # 5) coord_to_index: 'a13' → (1−1)*5+(3−1) = 2, etc.
-    def coord_to_index(coord: str) -> int:
-        row = int(coord[1]) - 1
+    def coord_to_index_row_major(coord: str) -> int:
+        row = int(coord[1]) - 1 
         col = int(coord[2]) - 1
         return row * 5 + col
 
+    def coord_to_index_col_major(coord: str) -> int:
+        row = int(coord[1]) - 1
+        col = int(coord[2]) - 1
+        return col * 5 + row
+
     # 6) Build termA and termB expressions
-    termA_str = build_term_string(termsA, 'A', coord_to_index)
-    termB_str = build_term_string(termsB, 'B', coord_to_index)
+    termA_str = build_term_string(termsA, 'A', coord_to_index_row_major)
+    termB_str = build_term_string(termsB, 'B', coord_to_index_row_major)
 
     # 7) Assemble the CUDA lines
     code_lines = [
@@ -143,7 +148,7 @@ def translate_expression(expr: str, param: str) -> str:
     code_lines.append(f"float result{param} = {result_expr};")
 
     for sign, coef, var in termsC:
-        idx = coord_to_index(var)
+        idx = coord_to_index_col_major(var)
         op = "+=" if sign == '+' else "-="
         # include coef, but if coef == '1', omit the multiplier
         mult = "" if coef == '1' else f"{coef} * "
