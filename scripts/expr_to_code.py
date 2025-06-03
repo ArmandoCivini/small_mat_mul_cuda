@@ -1,4 +1,5 @@
 import re
+from functools import partial
 
 def extract_three_groups(expr: str) -> list[str]:
     """
@@ -66,7 +67,7 @@ def build_term_string(terms: list[tuple[str,str,str]], matrix_name: str, coord_t
     return "".join(pieces)
 
 
-def parse_terms(segment: str, prefix: str) -> list[tuple[str,str,str]]:
+def parse_terms(segment: str, prefix: str, dim_row: int, dim_col: int) -> list[tuple[str,str,str]]:
     """
     Take something like "-a13 +2a25 - a31" (no outer parentheses) and return
     a list of (sign, coef, var) tuples. E.g. [('-', '1', 'a13'), ('+', '2','a25'), ('-','1','a31')].
@@ -75,13 +76,26 @@ def parse_terms(segment: str, prefix: str) -> list[tuple[str,str,str]]:
     seg = segment.strip()
     if not seg.startswith(('+', '-')):
         seg = '+' + seg
-    pattern = re.compile(rf'([+-])\s*(\d*)\s*({prefix}[1-5][1-5])')
+    pattern = re.compile(rf'([+-])\s*(\d*)\s*({prefix}[1-{dim_row}][1-{dim_col}])')
     return [(m[0], m[1] if m[1] else '1', m[2]) for m in pattern.findall(seg)]
 
 
-def translate_expression(expr: str, param: str) -> str:
+# coord_to_index: 'a13' → (1−1)*5+(3−1) = 2, etc.
+def coord_to_index_row_major(coord: str, row_dim: int) -> int:
+    row = int(coord[1]) - 1 
+    col = int(coord[2]) - 1
+    return row * row_dim + col
+
+
+def coord_to_index_col_major(coord: str, col_dim: int) -> int:
+    row = int(coord[1]) - 1
+    col = int(coord[2]) - 1
+    return col * col_dim + row
+
+
+def translate_expression(expr: str, param: str, dim_1: int, dim_2: int, dim_3: int) -> str:
     """
-    Translate a single Mathematica-style expression into CUDA-style code for 5×5×5.
+    Translate a single Mathematica-style expression into CUDA-style code for 5x5x5.
     We assume there are exactly three “groups” (A-part, B-part, C-part), 
     but they may be written with or without parentheses.
 
@@ -116,24 +130,14 @@ def translate_expression(expr: str, param: str) -> str:
     A_part, B_part, C_part = groups  # exactly three
 
     # 4) Parse each part into (sign, coef, var) lists
-    termsA = parse_terms(A_part, 'a')
-    termsB = parse_terms(B_part, 'b')
-    termsC = parse_terms(C_part, 'c')
+    termsA = parse_terms(A_part, 'a', dim_1, dim_2)
+    termsB = parse_terms(B_part, 'b', dim_2, dim_3)
+    termsC = parse_terms(C_part, 'c', dim_3, dim_1)
 
-    # 5) coord_to_index: 'a13' → (1−1)*5+(3−1) = 2, etc.
-    def coord_to_index_row_major(coord: str) -> int:
-        row = int(coord[1]) - 1 
-        col = int(coord[2]) - 1
-        return row * 5 + col
-
-    def coord_to_index_col_major(coord: str) -> int:
-        row = int(coord[1]) - 1
-        col = int(coord[2]) - 1
-        return col * 5 + row
 
     # 6) Build termA and termB expressions
-    termA_str = build_term_string(termsA, 'A', coord_to_index_row_major)
-    termB_str = build_term_string(termsB, 'B', coord_to_index_row_major)
+    termA_str = build_term_string(termsA, 'A', partial(coord_to_index_row_major, row_dim=dim_1))
+    termB_str = build_term_string(termsB, 'B', partial(coord_to_index_row_major, row_dim=dim_2))
 
     # 7) Assemble the CUDA lines
     code_lines = [
@@ -148,16 +152,16 @@ def translate_expression(expr: str, param: str) -> str:
     code_lines.append(f"float result{param} = {result_expr};")
 
     for sign, coef, var in termsC:
-        idx = coord_to_index_col_major(var)
+        idx = coord_to_index_col_major(var, col_dim=dim_3)
         op = "+=" if sign == '+' else "-="
         # include coef, but if coef == '1', omit the multiplier
         mult = "" if coef == '1' else f"{coef} * "
         code_lines.append(f"C[{idx}] {op} {mult}result{param}; // {var}")
 
-
     return "\n".join(code_lines)
 
-def process_expressions_file(input_file: str, output_file: str):
+
+def process_expressions_file(input_file: str, output_file: str, dims=(5, 5, 5)) -> None:
     """
     Read expressions from input file and write translated CUDA code to output file.
     
@@ -171,20 +175,20 @@ def process_expressions_file(input_file: str, output_file: str):
             if not line:  # Skip empty lines
                 continue
             
-            cuda_code = translate_expression(line, str(i))
+            cuda_code = translate_expression(line, str(i), *dims)
             fout.write(cuda_code)
             fout.write("\n\n")  # Add blank line between expressions
 # ── Example Usage ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    input_file = '555/555m93_lifted.txt'  # Replace with your input file path
+    input_file = '666/666m153_lifted.txt'  # Replace with your input file path
     output_file = 'cuda_code.cu'     # Replace with your desired output file path
-    process_expressions_file(input_file, output_file)
+    process_expressions_file(input_file, output_file, dims=(6, 6, 6))
     print(f"CUDA code written to {output_file}")
 
     # Test expression
-    # test_expr = "(-a13 - a15 + a35) (-b13 - b53) c31"
-    # test_output = translate_expression(test_expr, 'test')
+    # test_expr = "(a12+a13-a22-a23-a32-a33+a42+a43-a52-a53)(-b36+b46)(c45+c46-c55-c56+c65+c66)"
+    # test_output = translate_expression(test_expr, 'test', *(6, 6, 6))
     # print("\nTest Output:")
     # print(test_output)
 
