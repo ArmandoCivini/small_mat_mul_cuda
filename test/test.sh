@@ -1,2 +1,2 @@
-nvcc -Wno-deprecated-gpu-targets -arch=sm_89 555_test.cu -o 555_test
-./555_test
+nvcc -Wno-deprecated-gpu-targets -arch=sm_89 xxx_test.cu -o xxx_test
+./xxx_test
