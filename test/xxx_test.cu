@@ -50,6 +50,39 @@ void test_matrix_multiplication(int N) {
             for (int k = 0; k < N; ++k)
                 h_expected[i * N + j] += h_A[i * N + k] * h_B[k * N + j];
 
+    // Print matrices for debugging
+    printf("\nMatrix A:\n");
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            printf("%6.1f ", h_A[i * N + j]);
+        }
+        printf("\n");
+    }
+
+    printf("\nMatrix B:\n");
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            printf("%6.1f ", h_B[i * N + j]);
+        }
+        printf("\n");
+    }
+
+    printf("\nResult Matrix C:\n");
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            printf("%6.1f ", h_C[i * N + j]);
+        }
+        printf("\n");
+    }
+
+    printf("\nExpected Matrix:\n");
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            printf("%6.1f ", h_expected[i * N + j]);
+        }
+        printf("\n");
+    }
+
     // Compare results
     bool correct = true;
     for (int i = 0; i < N * N; ++i) {

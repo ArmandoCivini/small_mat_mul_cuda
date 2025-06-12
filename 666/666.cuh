@@ -18,7 +18,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (-a45-a46+a55+a56-a65-a66)(b12+b13+2*b14+2*b15-b22-b23-2*b24-2*b25+b32+b33+2*b34+2*b35-b42-b43+b52+b53)(-c36+c46)
     float termA2 = -A[22] - A[23] + A[28] + A[29] - A[34] - A[35];
-    float termB2 = B[1] + B[2] - B[7] - B[8] + B[13] + B[14] - B[19] - B[20] + B[25] + B[26];
+    float termB2 = B[1] + B[2] + 2*B[3] + 2*B[4] - B[7] - B[8] - 2*B[9] - 2*B[10] + B[13] + B[14] + 2*B[15] + 2*B[16] - B[19] - B[20] + B[25] + B[26];
     float result2 = termA2 * termB2;
     C[32] -= result2; // c36
     C[33] += result2; // c46
@@ -95,7 +95,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     C[17] += result7; // c63
 
     // Expression: (-2*a11-a12+a13+a14-a16+2*a21+a22-a23-a24+a26+2*a31+a32-a33-a34+a36-a42-a43+a52+a53-a62-a63)(b64+b65)(c53+c54)
-    float termA8 = -A[1] + A[2] + A[3] - A[5] + A[7] - A[8] - A[9] + A[11] + A[13] - A[14] - A[15] + A[17] - A[19] - A[20] + A[25] + A[26] - A[31] - A[32];
+    float termA8 = -2*A[0] - A[1] + A[2] + A[3] - A[5] + 2*A[6] + A[7] - A[8] - A[9] + A[11] + 2*A[12] + A[13] - A[14] - A[15] + A[17] - A[19] - A[20] + A[25] + A[26] - A[31] - A[32];
     float termB8 = B[33] + B[34];
     float result8 = termA8 * termB8;
     C[16] += result8; // c53
@@ -103,7 +103,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (-a53-a54)(-2*b11-b12+b13+b14-b16+2*b21+b22-b23-b24+b26-2*b31-b32+b33+b34-b36+b42+b43-b52-b53+b62+b63)(c64+c65)
     float termA9 = -A[26] - A[27];
-    float termB9 = -B[1] + B[2] + B[3] - B[5] + B[7] - B[8] - B[9] + B[11] - B[13] + B[14] + B[15] - B[17] + B[19] + B[20] - B[25] - B[26] + B[31] + B[32];
+    float termB9 = -2*B[0] - B[1] + B[2] + B[3] - B[5] + 2*B[6] + B[7] - B[8] - B[9] + B[11] - 2*B[12] - B[13] + B[14] + B[15] - B[17] + B[19] + B[20] - B[25] - B[26] + B[31] + B[32];
     float result9 = termA9 * termB9;
     C[23] += result9; // c64
     C[29] += result9; // c65
@@ -140,7 +140,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (-a23-a24)(b14+b15-b24-b25+b34+b35+b41-b43-b44+b45+2*b46-b51+b53+b54-b55-2*b56+b61-b63-b64+b65+2*b66)(-c12+c13)
     float termA12 = -A[8] - A[9];
-    float termB12 = B[3] + B[4] - B[9] - B[10] + B[15] + B[16] + B[18] - B[20] - B[21] + B[22] - B[24] + B[26] + B[27] - B[28] + B[30] - B[32] - B[33] + B[34];
+    float termB12 = B[3] + B[4] - B[9] - B[10] + B[15] + B[16] + B[18] - B[20] - B[21] + B[22] + 2*B[23] - B[24] + B[26] + B[27] - B[28] - 2*B[29] + B[30] - B[32] - B[33] + B[34] + 2*B[35];
     float result12 = termA12 * termB12;
     C[6] -= result12; // c12
     C[12] += result12; // c13
@@ -358,6 +358,8 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     float result33 = termA33 * termB33;
     C[1] += result33; // c21
     C[7] += result33; // c22
+    C[20] -= 2 * result33; // c34
+    C[21] += 2 * result33; // c44
 
     // Expression: (a55+a56)(-b33-b34+b66)(c44+c45-c54-c55+c64+c65)
     float termA34 = A[28] + A[29];
@@ -860,7 +862,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (-a23-a24+a26)(-b15-b16+b25+b26-b35-b36+b45+b46-b55-b56+b61-b63-b64+b65+2*b66)(-c21-c22+c31+c32-c41-c42+c51+c52)
     float termA81 = -A[8] - A[9] + A[11];
-    float termB81 = -B[4] - B[5] + B[10] + B[11] - B[16] - B[17] + B[22] + B[23] - B[28] - B[29] + B[30] - B[32] - B[33] + B[34];
+    float termB81 = -B[4] - B[5] + B[10] + B[11] - B[16] - B[17] + B[22] + B[23] - B[28] - B[29] + B[30] - B[32] - B[33] + B[34] + 2*B[35];
     float result81 = termA81 * termB81;
     C[1] -= result81; // c21
     C[7] -= result81; // c22
@@ -891,7 +893,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     C[11] += result82; // c62
 
     // Expression: (-2*a11-a12+a13+a14-a16+a21+a22+a31+a32-a41-a42+a51+a52-a61-a62)(-b25-b26+b35+b36-b45-b46+b55+b56)(c51+c53+c54)
-    float termA83 = -A[1] + A[2] + A[3] - A[5] + A[6] + A[7] + A[12] + A[13] - A[18] - A[19] + A[24] + A[25] - A[30] - A[31];
+    float termA83 = -2*A[0] - A[1] + A[2] + A[3] - A[5] + A[6] + A[7] + A[12] + A[13] - A[18] - A[19] + A[24] + A[25] - A[30] - A[31];
     float termB83 = -B[10] - B[11] + B[16] + B[17] - B[22] - B[23] + B[28] + B[29];
     float result83 = termA83 * termB83;
     C[4] += result83; // c51
@@ -900,7 +902,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (a51-a53-a54)(-2*b11-b12+b13+b14-b16+b21+b22-b31-b32+b41+b42-b51-b52+b61+b62)(-c25-c26+c35+c36-c45-c46+c55+c56)
     float termA84 = A[24] - A[26] - A[27];
-    float termB84 = -B[1] + B[2] + B[3] - B[5] + B[6] + B[7] - B[12] - B[13] + B[18] + B[19] - B[24] - B[25] + B[30] + B[31];
+    float termB84 = -2*B[0] - B[1] + B[2] + B[3] - B[5] + B[6] + B[7] - B[12] - B[13] + B[18] + B[19] - B[24] - B[25] + B[30] + B[31];
     float result84 = termA84 * termB84;
     C[25] -= result84; // c25
     C[31] -= result84; // c26
@@ -1138,7 +1140,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     C[35] += result106; // c66
 
     // Expression: (2*a45+2*a46-2*a55-2*a56+a63+a64+2*a65+a66)(b14+b15-b24-b25+b34+b35)(-c36+c46)
-    float termA107 = A[32] + A[33] + A[35];
+    float termA107 = 2*A[22] + 2*A[23] - 2*A[28] - 2*A[29] + A[32] + A[33] + 2*A[34] + A[35];
     float termB107 = B[3] + B[4] - B[9] - B[10] + B[15] + B[16];
     float result107 = termA107 * termB107;
     C[32] -= result107; // c36
@@ -1237,7 +1239,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     C[8] += result115; // c32
 
     // Expression: (2*a11+a12-a13-a14+a16-a21-a22-a31-a32)(-b25-b26+b35+b36-b45-b46+b55+b56+b64+b65)(-c31+c41+c53+c54)
-    float termA116 = A[1] - A[2] - A[3] + A[5] - A[6] - A[7] - A[12] - A[13];
+    float termA116 = 2*A[0] + A[1] - A[2] - A[3] + A[5] - A[6] - A[7] - A[12] - A[13];
     float termB116 = -B[10] - B[11] + B[16] + B[17] - B[22] - B[23] + B[28] + B[29] + B[33] + B[34];
     float result116 = termA116 * termB116;
     C[2] -= result116; // c31
@@ -1247,7 +1249,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (-a31+a41-a53-a54)(2*b11+b12-b13-b14+b16-b21-b22+b31+b32)(-c25-c26+c35+c36-c45-c46+c55+c56+c64+c65)
     float termA117 = -A[12] + A[18] - A[26] - A[27];
-    float termB117 = B[1] - B[2] - B[3] + B[5] - B[6] - B[7] + B[12] + B[13];
+    float termB117 = 2*B[0] + B[1] - B[2] - B[3] + B[5] - B[6] - B[7] + B[12] + B[13];
     float result117 = termA117 * termB117;
     C[25] -= result117; // c25
     C[31] -= result117; // c26
@@ -1284,7 +1286,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
 
     // Expression: (a23+a24+a36-a46)(b45+b46-b55-b56+b61-b63-b64+b65+2*b66)(-c12+c13-c21-c22+c31+c32-c41-c42+c51+c52)
     float termA120 = A[8] + A[9] + A[17] - A[23];
-    float termB120 = B[22] + B[23] - B[28] - B[29] + B[30] - B[32] - B[33] + B[34];
+    float termB120 = B[22] + B[23] - B[28] - B[29] + B[30] - B[32] - B[33] + B[34] + 2*B[35];
     float result120 = termA120 * termB120;
     C[6] -= result120; // c12
     C[12] += result120; // c13
@@ -1356,7 +1358,7 @@ __device__ __forceinline__ void matmul6x6_opt(const float* __restrict__ A,
     C[8] += result126; // c32
 
     // Expression: (2*a11+a43+a44)(b12+b13-b22-b23+b32+b33)(c21+c22-c34+c44)
-    float termA127 = A[20] + A[21];
+    float termA127 = 2*A[0] + A[20] + A[21];
     float termB127 = B[1] + B[2] - B[7] - B[8] + B[13] + B[14];
     float result127 = termA127 * termB127;
     C[1] += result127; // c21

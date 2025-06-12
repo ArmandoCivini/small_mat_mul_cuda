@@ -76,7 +76,7 @@ def parse_terms(segment: str, prefix: str, dim_row: int, dim_col: int) -> list[t
     seg = segment.strip()
     if not seg.startswith(('+', '-')):
         seg = '+' + seg
-    pattern = re.compile(rf'([+-])\s*(\d*)\s*({prefix}[1-{dim_row}][1-{dim_col}])')
+    pattern = re.compile(rf'([+-])\s*(\d*)\s*\*?\s*({prefix}[1-{dim_row}][1-{dim_col}])')
     return [(m[0], m[1] if m[1] else '1', m[2]) for m in pattern.findall(seg)]
 
 
