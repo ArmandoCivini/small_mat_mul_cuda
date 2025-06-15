@@ -2,13 +2,17 @@
 #include <cmath>    // for fabs()
 #include <cstdio>   // for printf()
 #include <vector>
-#include "../555/555.cuh"  // Update this header as needed for your generic matmul function
-#include "../666/666.cuh"  // Update this header as needed for your generic matmul function
+#include "../555/555.cuh"
+#include "../555/555_reg_bound.cuh"
+#include "../666/666.cuh"
+#include "../666/666_reg_bound.cuh"
 
 __global__ void test_matmul_kernel(const float* A, const float* B, float* C) {
     // Replace with your generic matrix multiplication function
     // matmul_generic<N>(A, B, C);
-    matmul6x6_opt(A, B, C); // Placeholder - update this
+    // matmul6x6_opt(A, B, C);
+    // matmul5x5_opt_reg_bound(A, B, C);
+    matmul6x6_opt_reg_bound(A, B, C);
 }
 
 void test_matrix_multiplication(int N) {
