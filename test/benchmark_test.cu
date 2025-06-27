@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <vector>
 #include <cuda_runtime.h>
+#include <cublas_v2.h>
 #include <chrono>
 #include "../555/555.cuh"
 #include "../555/555_reg_bound.cuh"
@@ -55,6 +56,39 @@ void benchmark_kernel(void (*kernel)(const float*, const float*, float*), const 
     printf("%s: avg %f ms for %d runs (%d multiplications per run)\n", name, total_ms / REPEAT, REPEAT, NUM_MULS);
 }
 
+void benchmark_cublas(const float* d_A, const float* d_B, float* d_C) {
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+    const float alpha = 1.0f, beta = 0.0f;
+    
+    cudaDeviceSynchronize();
+    double total_ms = 0.0;
+    
+    for (int r = 0; r < REPEAT; ++r) {
+        cudaMemset(d_C, 0, NUM_MULS * N * N * sizeof(float));
+        auto start = std::chrono::high_resolution_clock::now();
+        
+        // cuBLAS batch GEMM for multiple 5x5 matrices
+        cublasSgemmStridedBatched(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                                  N, N, N,
+                                  &alpha,
+                                  d_A, N, N*N,
+                                  d_B, N, N*N,
+                                  &beta,
+                                  d_C, N, N*N,
+                                  NUM_MULS);
+        
+        cudaDeviceSynchronize();
+        auto end = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(end - start).count();
+        total_ms += ms;
+    }
+    
+    printf("cuBLAS: avg %f ms for %d runs (%d multiplications per run)\n", total_ms / REPEAT, REPEAT, NUM_MULS);
+    cublasDestroy(handle);
+}
+
+
 int main() {
     size_t total = NUM_MULS * N * N;
     std::vector<float> h_A(total);
@@ -76,6 +110,8 @@ int main() {
     benchmark_kernel(kernel_func1, "matmul5x5_opt", d_A, d_B, d_C);
     benchmark_kernel(kernel_func2, "matmul5x5_opt_reg_bound", d_A, d_B, d_C);
     benchmark_kernel(kernel_naive, "naive", d_A, d_B, d_C);
+    benchmark_cublas(d_A, d_B, d_C);
+    benchmark_cutlass(d_A, d_B, d_C);
 
     cudaFree(d_A);
     cudaFree(d_B);
